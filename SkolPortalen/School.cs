@@ -16,6 +16,7 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using Microsoft.VisualBasic;
 using System.Xml.Linq;
 using System.Reflection;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SkolPortalen
 {
@@ -42,6 +43,9 @@ namespace SkolPortalen
                     Console.WriteLine("#6: Lista med alla kurser och det snittbetyg som eleverna fått på den kursen samt det högsta och lägsta betyget som någon fått i kursen");
                     Console.WriteLine("#7: Lägga till nya elever");
                     Console.WriteLine("#8: Lägg till ny personal)");
+                    Console.WriteLine("#9: Hur många anställda jobbar på de olika avdelningarna "); // EF i VS"
+                    Console.WriteLine("#10: Visa All information om alla elever ");
+                    Console.WriteLine("#11: Visa en lista på alla aktiva kurser ");
                     Console.Write("\n Välj alternativ: ");
                     try
                     {
@@ -80,6 +84,15 @@ namespace SkolPortalen
                         break;
                     case 8:
                         addEmployee();
+                        break;
+                    case 9:
+                        CountAllEMployee();
+                        break;
+                    case 10:
+                        allDataInStudent();
+                        break;
+                    case 11:
+                        displayCourseStatus();
                         break;
                 }
             }
@@ -360,19 +373,23 @@ namespace SkolPortalen
 
         private void addStudent()
         {
-            int tempPersoNumber = 0;
-            string personNUmber = "";
+            int tempPersonNumber = 0;
+            string personNumber = "";
             string firstname = "";
             string lastname = "";
             string gender = "";
             string email = "";
-            int keyTracker = 0;
+            string getPhoneNumber = "";
+
+            int keyTrackerForPhone = 0;
+            int keyTracker = 0; // new students fk_studentId in "Class"
             string chooseCourse = "";
             int getClassroomId = 0;
 
             while (true)
             {
                 bool breakLoop = true;
+                //--- add personnumber --------------
                 while (true)
                 {
                     Console.Clear();
@@ -380,10 +397,10 @@ namespace SkolPortalen
                     Console.Write("\nElevens Personnummer (8 tecken, ej dom fyra sista): ");
                     try
                     {
-                        tempPersoNumber = Convert.ToInt32(Console.ReadLine());
-                        if (tempPersoNumber.ToString().Length == 8)
+                        tempPersonNumber = Convert.ToInt32(Console.ReadLine());
+                        if (tempPersonNumber.ToString().Length == 8)
                         {
-                            personNUmber = tempPersoNumber.ToString() + "-";
+                            personNumber = tempPersonNumber.ToString() + "-";
                             break;
                         }
                         else
@@ -398,18 +415,18 @@ namespace SkolPortalen
                         System.Threading.Thread.Sleep(1500);
                     }
                 }
-
+               
                 while (true)
                 {
                     Console.Clear();
                     Console.WriteLine("Skriv in 4 sista siffrorna i personnumret");
-                    Console.Write(personNUmber);
+                    Console.Write(personNumber);
                     try
                     {
-                        tempPersoNumber = Convert.ToInt32(Console.ReadLine());
-                        if (tempPersoNumber.ToString().Length == 4)
+                        tempPersonNumber = Convert.ToInt32(Console.ReadLine());
+                        if (tempPersonNumber.ToString().Length == 4)
                         {
-                            personNUmber += tempPersoNumber.ToString();
+                            personNumber += tempPersonNumber.ToString();
                             break;
                         }
                         else
@@ -427,7 +444,7 @@ namespace SkolPortalen
                 var myStudents = from Student in context.Students select Student; // loop throw students, no one should have the same personnumber
                 foreach (var stud in myStudents)
                 {
-                    if (personNUmber == stud.StudPersonNumber)
+                    if (personNumber == stud.StudPersonNumber)
                     {
                         breakLoop = false;
                         Console.WriteLine("Det finns redan en elev med detta personnummer, försök igen");
@@ -440,10 +457,11 @@ namespace SkolPortalen
                 }
             }
 
+            //--- add first and lastname --------------
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("Personnummer: " + personNUmber);
+                Console.WriteLine("Personnummer: " + personNumber);
                 Console.Write("Skriv in Elevens Förnamn: ");
                 firstname = Console.ReadLine();
                 firstname = firstname.Trim();
@@ -461,7 +479,7 @@ namespace SkolPortalen
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("Personnummer: " + personNUmber);
+                Console.WriteLine("Personnummer: " + personNumber);
                 Console.WriteLine("Elevens Förnamn: " + firstname);
                 Console.Write("Skriv in Elevens Efternamn: ");
                 lastname = Console.ReadLine();
@@ -480,10 +498,11 @@ namespace SkolPortalen
             }
             Console.Clear();
 
+            //--- add gender --------------
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("Personnummer: " + personNUmber);
+                Console.WriteLine("Personnummer: " + personNumber);
                 Console.WriteLine("Elevens namn: " + firstname + " " + lastname);
                 Console.Write("\nSkriv in Kön F/M: ");
                 gender = Console.ReadLine();
@@ -507,6 +526,59 @@ namespace SkolPortalen
                     System.Threading.Thread.Sleep(1500);
                 }
             }
+
+            //--- add phone number --------------
+            while (true)
+            {
+                int tempPhoneNumber = 0;
+                bool breakLoop = false;
+
+                var myStudents = from s in context.Students select s; // 
+                myStudents = myStudents.OrderByDescending(s => s.StudentId);
+
+
+                while (true)
+                {
+                    Console.Clear();
+                    Console.Write("Ange mobilnnummer utan mellanslag: ");
+                    try
+                    {
+                        tempPhoneNumber = Convert.ToInt32(Console.ReadLine());
+
+                        if (tempPhoneNumber.ToString().Length == 9)
+                        {
+                            breakLoop = true;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Ogiltigt format, försök igen");
+                            System.Threading.Thread.Sleep(1500);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // do nothing
+                    }
+                }
+
+                getPhoneNumber = tempPhoneNumber.ToString();
+                getPhoneNumber = getPhoneNumber.Insert(0, "0");
+                getPhoneNumber = getPhoneNumber.Insert(3, "-");
+
+                foreach (var s in myStudents) //get the new key for upcoming student
+                {
+                    Console.WriteLine(s.StudentId);
+                    keyTrackerForPhone = s.StudentId + 1;
+                    break;
+                }
+                if (breakLoop == true)
+                {
+                    break;
+                }
+            }
+
+            //--- add email --------------
             Console.Clear();
             string addEmail = "";
             Console.Write("\nLägg till email? [y/n]: ");
@@ -519,7 +591,7 @@ namespace SkolPortalen
                 while (true)
                 {
                     Console.Clear();
-                    Console.WriteLine("Personnummer: " + personNUmber);
+                    Console.WriteLine("Personnummer: " + personNumber);
                     Console.WriteLine("Elevens Förnamn: " + firstname);
                     Console.WriteLine("Elevens Efternamn: " + lastname);
                     Console.Write("Skriv Elevens Email: ");
@@ -536,7 +608,10 @@ namespace SkolPortalen
                     }
                 }
             }
-            var myClass = from classes in context.Classes select classes;  // Enter course on student
+
+            //--- Enter course on student --------------
+
+            var myClass = from classes in context.Classes select classes;  
             var myCourse = from Course in context.Courses select Course;
             foreach (var classData in myClass) // gets the new studentId number and saves it in "keytracker"
             {
@@ -546,6 +621,7 @@ namespace SkolPortalen
                 }
             }
             keyTracker += 1; // new students fk_studentId in "Class"
+
 
             while (true)
             {
@@ -609,15 +685,20 @@ namespace SkolPortalen
             int getCourse = Convert.ToInt32(chooseCourse);
             if (addEmail == "y")
             {
-                context.Students.Add(new Student(personNUmber, firstname, lastname, gender, email)); // if student has a email
+                context.Students.Add(new Student(personNumber, firstname, lastname, gender, email)); // if student has a email
             }
             else
             {
-                context.Students.Add(new Student(personNUmber, firstname, lastname, gender)); // student has no email, email = NULL
+                context.Students.Add(new Student(personNumber, firstname, lastname, gender)); // student has no email, email = NULL
             }
             context.SaveChanges();
+
             context.Classes.Add(new Class(keyTracker, getCourse, getClassroomId));
             context.SaveChanges();
+
+            context.Phones.Add(new Phone() { FkStudentId = keyTrackerForPhone, PhoneNumber = getPhoneNumber });
+            context.SaveChanges();
+
             Console.WriteLine("Eleven har lagts till");
             System.Threading.Thread.Sleep(1500);
         }
@@ -629,7 +710,7 @@ namespace SkolPortalen
             string gender = "";
             int titleId = 0;
             int salaryId = 0;
-            
+
             while (true)
             {
                 Console.Clear();
@@ -783,7 +864,7 @@ namespace SkolPortalen
             Console.WriteLine("Medarbetare har lagts till");
         }
 
-        public static void ReadSqlTable(string sqlQuery)
+        private static void ReadSqlTable(string sqlQuery)
         {
             SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
             connection.Open();
@@ -805,6 +886,140 @@ namespace SkolPortalen
                 }
                 connection.Close();
             }
+        }
+
+        private void CountAllEMployee() // #9: Hur många anställda jobbar på de olika avdelningarna "); // EF i VS"
+        {
+            string getData = "";
+            string getTitle = "";
+            int count = 0;
+            string prevData = ""; // collecting previously data and compare the previously data to the current data
+            bool skipRowInFirstLoop = true;
+            var employee = from emp in context.Employees.OrderBy(emp => emp.FkTitleId)
+                           join title in context.Titles on emp.FkTitleId equals title.TitleId
+                           select new
+                           {
+                               getTitle = title.TitelName,
+                               getData = "Employee-ID " + emp.EmployeeId + ": " + emp.EmpFirstName + " " + emp.EmpLastname
+
+                           };
+            Console.Clear();
+            foreach (var emps in employee)
+            {
+                if (emps.getTitle != prevData && skipRowInFirstLoop == false) // entering foreach for the first time, this will be skipped
+                {
+                    Console.WriteLine("Antal anställda: " + count);
+                }
+                if (prevData == emps.getTitle)
+                {
+                    count++;
+                }
+                else
+                {
+                    skipRowInFirstLoop = false;
+                    Console.WriteLine("-------------------");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(emps.getTitle);
+                    Console.ResetColor();
+                    count = 1;
+                }
+                prevData = emps.getTitle;
+            }
+            Console.WriteLine("Antal anställda: " + count);
+            Console.ReadKey();
+        }
+
+        private void allDataInStudent()
+        {
+            string phone;
+            string name;
+            string prevStudentData = ""; // collecting previously data for controlling the foreach-loop for prevent duplicate data
+            var student = from s in context.Students.OrderBy(s => s.StudentId)
+                          join ph in context.Phones on s.StudentId equals ph.FkStudentId
+                          select new
+                          {
+                              phone = ph.PhoneNumber,
+                              name = "ID: " + s.StudentId + "\n" +
+                                     s.StudPersonNumber + "\n" +
+                                     s.StudFirstName + " " + s.StudLastName + ", " + s.StudGender + "\n" +
+                                     s.StudEmail
+                          };
+            Console.Clear();
+            foreach (var stud in student)
+            {
+                if (prevStudentData != stud.name) // if the collected data is not the same as the new data, print new data ELSE print all phonenumber
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("-------------------------");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine(stud.name);
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                    Console.WriteLine("Phone number:");
+                    Console.ForegroundColor = ConsoleColor.DarkBlue;
+                    Console.WriteLine(stud.phone);
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkBlue;
+                    Console.WriteLine(stud.phone);
+                }
+                Console.ResetColor();
+                prevStudentData = stud.name;
+            }
+            Console.ReadKey();
+        }
+
+        private void displayCourseStatus()
+        {
+            string userInput;
+            var courses = from c in context.Courses select c;
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("#1: Hämta alla aktiva kurser");
+                Console.WriteLine("#2: Hämta alla Inaktiva kurser");
+                Console.Write("Välj alternativ: ");
+                userInput = Console.ReadLine();
+                userInput = userInput.Trim();
+                Console.Clear();
+
+                if (userInput == "1")
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Aktiva kurser:");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    foreach (var course in courses)
+                    {
+                        if (course.CourseStatus == "Active")
+                        {
+                            Console.WriteLine(course.CourseName + ": " + course.CoursePoints + " Poäng");
+                        }
+                    }
+                    break;
+                }
+                else if (userInput == "2")
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Inaktiva kurser:");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    foreach (var course in courses)
+                    {
+                        if (course.CourseStatus == "Inactive")
+                        {
+                            Console.WriteLine(course.CourseName + ": " + course.CoursePoints + " Poäng");
+                        }
+                    }
+                    break;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("Ogiltigt alternativ, försök igen");
+                    System.Threading.Thread.Sleep(1500);
+                }
+            }
+            Console.ResetColor();
+            Console.ReadKey();
         }
     }
 }
