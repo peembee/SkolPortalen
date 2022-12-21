@@ -373,492 +373,547 @@ namespace SkolPortalen
 
         private void addStudent()
         {
-            int tempPersonNumber = 0;
-            string personNumber = "";
-            string firstname = "";
-            string lastname = "";
-            string gender = "";
+            int keyTrackerForPhone = 0; //get the upcoming Student_ID
+            int keyTracker = 0; // get the upcoming FK_studentID
             string email = "";
-            string getPhoneNumber = "";
-
-            int keyTrackerForPhone = 0;
-            int keyTracker = 0; // new students fk_studentId in "Class"
-            string chooseCourse = "";
+            string addEmail = "";
             int getClassroomId = 0;
 
-            while (true)
+            string personNumber = getPersonNumber();
+            string firstname = getFirstname();
+            string lastname = getLastname();
+            string gender = getGender();
+            string phoneNumber = getPhoneDetails();
+            email = getEmail();
+            int getCourse = getCourseAndClass();
+            addStudentToDatabase();
+
+
+            // ---Local funktions---
+            string getPersonNumber()
             {
-                bool breakLoop = true;
-                //--- add personnumber --------------
+                int tempPersonNumber = 0;
                 while (true)
                 {
-                    Console.Clear();
-                    Console.WriteLine("Lägg till nya Elever");
-                    Console.Write("\nElevens Personnummer (8 tecken, ej dom fyra sista): ");
-                    try
+                    bool breakLoop = true;
+                    while (true)
                     {
-                        tempPersonNumber = Convert.ToInt32(Console.ReadLine());
-                        if (tempPersonNumber.ToString().Length == 8)
+                        Console.Clear();
+                        Console.WriteLine("Lägg till nya Elever");
+                        Console.Write("\nElevens Personnummer (8 tecken, ej dom fyra sista): ");
+                        try
                         {
-                            personNumber = tempPersonNumber.ToString() + "-";
-                            break;
+                            tempPersonNumber = Convert.ToInt32(Console.ReadLine());
+                            if (tempPersonNumber.ToString().Length == 8)
+                            {
+                                personNumber = tempPersonNumber.ToString() + "-";
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("8 siffror");
+                                System.Threading.Thread.Sleep(1500);
+                            }
                         }
-                        else
+                        catch (Exception)
                         {
-                            Console.WriteLine("8 siffror");
+                            Console.WriteLine("Ogiltigt format..");
                             System.Threading.Thread.Sleep(1500);
                         }
                     }
-                    catch (Exception)
+
+                    while (true)
                     {
-                        Console.WriteLine("Ogiltigt format..");
-                        System.Threading.Thread.Sleep(1500);
-                    }
-                }
-               
-                while (true)
-                {
-                    Console.Clear();
-                    Console.WriteLine("Skriv in 4 sista siffrorna i personnumret");
-                    Console.Write(personNumber);
-                    try
-                    {
-                        tempPersonNumber = Convert.ToInt32(Console.ReadLine());
-                        if (tempPersonNumber.ToString().Length == 4)
+                        Console.Clear();
+                        Console.WriteLine("Skriv in 4 sista siffrorna i personnumret");
+                        Console.Write(personNumber);
+                        try
                         {
-                            personNumber += tempPersonNumber.ToString();
-                            break;
+                            tempPersonNumber = Convert.ToInt32(Console.ReadLine());
+                            if (tempPersonNumber.ToString().Length == 4)
+                            {
+                                personNumber += tempPersonNumber.ToString();
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("4 siffror");
+                                System.Threading.Thread.Sleep(1500);
+                            }
                         }
-                        else
+                        catch (Exception)
                         {
-                            Console.WriteLine("4 siffror");
+                            Console.WriteLine("Ogiltigt format..");
                             System.Threading.Thread.Sleep(1500);
                         }
                     }
-                    catch (Exception)
+                    var myStudents = from Student in context.Students select Student; // loop throw students, no one should have the same personnumber
+                    foreach (var stud in myStudents)
                     {
-                        Console.WriteLine("Ogiltigt format..");
-                        System.Threading.Thread.Sleep(1500);
+                        if (personNumber == stud.StudPersonNumber)
+                        {
+                            breakLoop = false;
+                            Console.WriteLine("Det finns redan en elev med detta personnummer, försök igen");
+                            System.Threading.Thread.Sleep(1500);
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
                     }
                 }
-                var myStudents = from Student in context.Students select Student; // loop throw students, no one should have the same personnumber
-                foreach (var stud in myStudents)
-                {
-                    if (personNumber == stud.StudPersonNumber)
-                    {
-                        breakLoop = false;
-                        Console.WriteLine("Det finns redan en elev med detta personnummer, försök igen");
-                        System.Threading.Thread.Sleep(1500);
-                    }
-                }
-                if (breakLoop == true)
-                {
-                    break;
-                }
+                return personNumber;
             }
 
-            //--- add first and lastname --------------
-            while (true)
+            string getFirstname()
             {
-                Console.Clear();
-                Console.WriteLine("Personnummer: " + personNumber);
-                Console.Write("Skriv in Elevens Förnamn: ");
-                firstname = Console.ReadLine();
-                firstname = firstname.Trim();
-                firstname = firstname.ToLower();
-                if (firstname.Length < 2 || firstname.Length >= 50)
+                while (true)
                 {
-                    Console.WriteLine("2 - 50 tecken");
-                }
-                else
-                {
-                    firstname = char.ToUpper(firstname[0]) + firstname.Substring(1);
-                    break;
-                }
-            }
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Personnummer: " + personNumber);
-                Console.WriteLine("Elevens Förnamn: " + firstname);
-                Console.Write("Skriv in Elevens Efternamn: ");
-                lastname = Console.ReadLine();
-                lastname = lastname.Trim();
-                lastname = lastname.ToLower();
-                if (lastname.Length < 2 || lastname.Length >= 50)
-                {
-                    Console.WriteLine("2 - 50 tecken");
-                    System.Threading.Thread.Sleep(1500);
-                }
-                else
-                {
-                    lastname = char.ToUpper(lastname[0]) + lastname.Substring(1);
-                    break;
-                }
-            }
-            Console.Clear();
-
-            //--- add gender --------------
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Personnummer: " + personNumber);
-                Console.WriteLine("Elevens namn: " + firstname + " " + lastname);
-                Console.Write("\nSkriv in Kön F/M: ");
-                gender = Console.ReadLine();
-                gender = gender.Trim();
-                gender = gender.ToLower();
-                if (gender == "m" || gender == "male" || gender == "f" || gender == "female")
-                {
-                    if (gender == "m" || gender == "male")
+                    Console.Clear();
+                    Console.WriteLine("Personnummer: " + personNumber);
+                    Console.Write("Skriv in Elevens Förnamn: ");
+                    firstname = Console.ReadLine();
+                    firstname = firstname.Trim();
+                    firstname = firstname.ToLower();
+                    if (firstname.Length < 2 || firstname.Length >= 50)
                     {
-                        gender = "Male";
+                        Console.WriteLine("2 - 50 tecken");
                     }
                     else
                     {
-                        gender = "Female";
+                        firstname = char.ToUpper(firstname[0]) + firstname.Substring(1);
+                        break;
                     }
-                    break;
                 }
-                else
-                {
-                    Console.WriteLine("M för male, F för female");
-                    System.Threading.Thread.Sleep(1500);
-                }
+                return firstname;
             }
 
-            //--- add phone number --------------
-            while (true)
+            string getLastname()
             {
-                int tempPhoneNumber = 0;
-                bool breakLoop = false;
-
-                var myStudents = from s in context.Students select s; // 
-                myStudents = myStudents.OrderByDescending(s => s.StudentId);
-
-
-                while (true)
-                {
-                    Console.Clear();
-                    Console.Write("Ange mobilnnummer utan mellanslag: ");
-                    try
-                    {
-                        tempPhoneNumber = Convert.ToInt32(Console.ReadLine());
-
-                        if (tempPhoneNumber.ToString().Length == 9)
-                        {
-                            breakLoop = true;
-                            break;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Ogiltigt format, försök igen");
-                            System.Threading.Thread.Sleep(1500);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // do nothing
-                    }
-                }
-
-                getPhoneNumber = tempPhoneNumber.ToString();
-                getPhoneNumber = getPhoneNumber.Insert(0, "0");
-                getPhoneNumber = getPhoneNumber.Insert(3, "-");
-
-                foreach (var s in myStudents) //get the new key for upcoming student
-                {
-                    Console.WriteLine(s.StudentId);
-                    keyTrackerForPhone = s.StudentId + 1;
-                    break;
-                }
-                if (breakLoop == true)
-                {
-                    break;
-                }
-            }
-
-            //--- add email --------------
-            Console.Clear();
-            string addEmail = "";
-            Console.Write("\nLägg till email? [y/n]: ");
-            addEmail = Console.ReadLine();
-            addEmail = addEmail.Trim();
-            addEmail = addEmail.ToLower();
-            if (addEmail == "y" || addEmail == "yes")
-            {
-                addEmail = "y";
                 while (true)
                 {
                     Console.Clear();
                     Console.WriteLine("Personnummer: " + personNumber);
                     Console.WriteLine("Elevens Förnamn: " + firstname);
-                    Console.WriteLine("Elevens Efternamn: " + lastname);
-                    Console.Write("Skriv Elevens Email: ");
-                    email = Console.ReadLine();
-                    email = email.Trim();
-                    if (email.Length >= 50)
+                    Console.Write("Skriv in Elevens Efternamn: ");
+                    lastname = Console.ReadLine();
+                    lastname = lastname.Trim();
+                    lastname = lastname.ToLower();
+                    if (lastname.Length < 2 || lastname.Length >= 50)
                     {
-                        Console.WriteLine("Max 50 tecken");
+                        Console.WriteLine("2 - 50 tecken");
                         System.Threading.Thread.Sleep(1500);
                     }
                     else
                     {
+                        lastname = char.ToUpper(lastname[0]) + lastname.Substring(1);
                         break;
                     }
                 }
+                return lastname;
             }
 
-            //--- Enter course on student --------------
-
-            var myClass = from classes in context.Classes select classes;  
-            var myCourse = from Course in context.Courses select Course;
-            foreach (var classData in myClass) // gets the new studentId number and saves it in "keytracker"
+            string getGender()
             {
-                if (classData.FkStudentId > keyTracker)
+                while (true)
                 {
-                    keyTracker = classData.FkStudentId;
-                }
-            }
-            keyTracker += 1; // new students fk_studentId in "Class"
-
-
-            while (true)
-            {
-                bool breakLoop = false;
-                Console.Clear();
-                Console.WriteLine("--------------------");
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                foreach (var course in myCourse)                       // display course-information
-                {
-                    Console.WriteLine("#" + course.CourseId + ": " + course.CourseName);
-                }
-                Console.ResetColor();
-                Console.WriteLine("--------------------");
-                Console.Write("\nMata in siffra för kursen eleven ska ska gå på: ");
-                chooseCourse = Console.ReadLine();
-                chooseCourse = chooseCourse.Trim();
-                chooseCourse = chooseCourse.ToLower();
-                foreach (var course in myCourse)
-                {
-                    if (chooseCourse == course.CourseId.ToString())
+                    Console.Clear();
+                    Console.WriteLine("Personnummer: " + personNumber);
+                    Console.WriteLine("Elevens namn: " + firstname + " " + lastname);
+                    Console.Write("\nSkriv in Kön F/M: ");
+                    gender = Console.ReadLine();
+                    gender = gender.Trim();
+                    gender = gender.ToLower();
+                    if (gender == "m" || gender == "male" || gender == "f" || gender == "female")
                     {
-                        if (course.CourseStatus == "Inactive")
+                        if (gender == "m" || gender == "male")
                         {
-                            Console.WriteLine("Denna kurs är för närvarande inaktiv, välj någon annan kurs");
+                            gender = "Male";
+                        }
+                        else
+                        {
+                            gender = "Female";
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("M för male, F för female");
+                        System.Threading.Thread.Sleep(1500);
+                    }
+                }
+                return gender;
+            }
+
+            string getPhoneDetails()
+            {
+                while (true)
+                {
+                    int tempPhoneNumber = 0;
+                    bool breakLoop = false;
+
+                    var myStudents = from s in context.Students select s;
+                    myStudents = myStudents.OrderByDescending(s => s.StudentId);
+
+                    while (true)
+                    {
+                        Console.Clear();
+                        Console.Write("Ange mobilnnummer utan mellanslag: ");
+                        try
+                        {
+                            tempPhoneNumber = Convert.ToInt32(Console.ReadLine());
+
+                            if (tempPhoneNumber.ToString().Length == 9)
+                            {
+                                breakLoop = true;
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Ogiltigt format, försök igen");
+                                System.Threading.Thread.Sleep(1500);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            // do nothing
+                        }
+                    }
+
+                    phoneNumber = tempPhoneNumber.ToString();
+                    phoneNumber = phoneNumber.Insert(0, "0");
+                    phoneNumber = phoneNumber.Insert(3, "-");
+
+                    foreach (var s in myStudents) //get the new key for upcoming student
+                    {
+                        keyTrackerForPhone = s.StudentId + 1;
+                        break;
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
+                    }
+                }
+                return phoneNumber;
+            }
+
+            string getEmail()
+            {
+                Console.Clear();
+                Console.Write("\nLägg till email? [y/n]: ");
+                addEmail = Console.ReadLine();
+                addEmail = addEmail.Trim();
+                addEmail = addEmail.ToLower();
+                if (addEmail == "y" || addEmail == "yes")
+                {
+                    addEmail = "y";
+                    while (true)
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Personnummer: " + personNumber);
+                        Console.WriteLine("Elevens Förnamn: " + firstname);
+                        Console.WriteLine("Elevens Efternamn: " + lastname);
+                        Console.Write("Skriv Elevens Email: ");
+                        email = Console.ReadLine();
+                        email = email.Trim();
+                        if (email.Length >= 50)
+                        {
+                            Console.WriteLine("Max 50 tecken");
                             System.Threading.Thread.Sleep(1500);
                         }
                         else
                         {
-                            breakLoop = true;
+                            break;
                         }
+                    }
+                }
+                return email;
+            }
+
+            int getCourseAndClass()
+            {
+                //// get the new upcoming studentId and saves it in "keytracker"
+                string chooseCourse = "";
+
+                var myClass = from classes in context.Classes select classes;
+                myClass = myClass.OrderByDescending(c => c.ClassId);
+                var myCourse = from Course in context.Courses select Course;
+
+                foreach (var classData in myClass)
+                {
+                    keyTracker = classData.FkStudentId + 1; // new students fk_studentId in "Class"
+                    break;
+                }
+                // get courseInformation
+                while (true)
+                {
+                    bool breakLoop = false;
+                    Console.Clear();
+                    Console.WriteLine("--------------------");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    foreach (var course in myCourse)
+                    {
+                        Console.WriteLine("#" + course.CourseId + ": " + course.CourseName);
+                    }
+                    Console.ResetColor();
+
+                    Console.WriteLine("--------------------");
+                    Console.Write("\nMata in siffra för kursen eleven ska gå på: ");
+                    chooseCourse = Console.ReadLine();
+                    chooseCourse = chooseCourse.Trim();
+                    chooseCourse = chooseCourse.ToLower();
+                    foreach (var course in myCourse)
+                    {
+                        if (chooseCourse == course.CourseId.ToString())
+                        {
+                            if (course.CourseStatus == "Inactive")
+                            {
+                                Console.WriteLine("Denna kurs är för närvarande inaktiv, välj någon annan kurs");
+                                System.Threading.Thread.Sleep(1500);
+                            }
+                            else
+                            {
+                                breakLoop = true;
+                            }
+                            break;
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
                         break;
                     }
                 }
-                if (breakLoop == true)
+
+
+                // due to course, classroom will automatic generates
+                switch (chooseCourse)
                 {
-                    break;
+                    case "1":
+                        getClassroomId = 2;
+                        break;
+                    case "2":
+                        getClassroomId = 4;
+                        break;
+                    case "3":
+                        getClassroomId = 2;
+                        break;
+                    case "4":
+                        getClassroomId = 1;
+                        break;
+                    case "5":
+                        getClassroomId = 3;
+                        break;
+                    case "6":
+                        getClassroomId = 5;
+                        break;
                 }
+                getCourse = Convert.ToInt32(chooseCourse);
+
+                return getCourse;
             }
 
-            switch (chooseCourse)  // due to course, classroom will automatic generates
+            void addStudentToDatabase()
             {
-                case "1":
-                    getClassroomId = 2;
-                    break;
-                case "2":
-                    getClassroomId = 4;
-                    break;
-                case "3":
-                    getClassroomId = 2;
-                    break;
-                case "4":
-                    getClassroomId = 1;
-                    break;
-                case "5":
-                    getClassroomId = 3;
-                    break;
-                case "6":
-                    getClassroomId = 5;
-                    break;
-            }
-            int getCourse = Convert.ToInt32(chooseCourse);
-            if (addEmail == "y")
-            {
-                context.Students.Add(new Student(personNumber, firstname, lastname, gender, email)); // if student has a email
-            }
-            else
-            {
-                context.Students.Add(new Student(personNumber, firstname, lastname, gender)); // student has no email, email = NULL
-            }
-            context.SaveChanges();
+                if (addEmail == "y")
+                {
+                    context.Students.Add(new Student(personNumber, firstname, lastname, gender, email)); // if student has a email
+                }
+                else
+                {
+                    context.Students.Add(new Student(personNumber, firstname, lastname, gender)); // student has no email, email = NULL
+                }
+                context.SaveChanges();
 
-            context.Classes.Add(new Class(keyTracker, getCourse, getClassroomId));
-            context.SaveChanges();
+                context.Classes.Add(new Class(keyTracker, getCourse, getClassroomId));
+                context.SaveChanges();
 
-            context.Phones.Add(new Phone() { FkStudentId = keyTrackerForPhone, PhoneNumber = getPhoneNumber });
-            context.SaveChanges();
+                context.Phones.Add(new Phone() { FkStudentId = keyTrackerForPhone, PhoneNumber = phoneNumber });
+                context.SaveChanges();
 
-            Console.WriteLine("Eleven har lagts till");
-            System.Threading.Thread.Sleep(1500);
+                Console.WriteLine("Eleven har lagts till");
+                System.Threading.Thread.Sleep(1500);
+            }
         }
 
         private void addEmployee()
         {
-            string firstname = "";
-            string lastname = "";
-            string gender = "";
-            int titleId = 0;
-            int salaryId = 0;
+            string firstname = getFirstname();
+            string lastname = getLastname();
+            string gender = getGender();
+            int titleId = getTitle();
+            int salaryId = getSalary();
 
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Lägg Till Medarbetare");
-                Console.Write("Medarbetarens Förnamn: ");
-                firstname = Console.ReadLine();
-                firstname = firstname.Trim();
-                firstname = firstname.ToLower();
-                if (firstname.Length < 2 || firstname.Length >= 50)
-                {
-                    Console.WriteLine("2 - 50 tecken");
-                    System.Threading.Thread.Sleep(1500);
-                }
-                else
-                {
-                    firstname = char.ToUpper(firstname[0]) + firstname.Substring(1);
-                    break;
-                }
-            }
 
-            while (true)
+            // ---Local funktion---
+            string getFirstname()
             {
-                Console.Clear();
-                Console.WriteLine("Medarbetarens Förnamn: " + firstname);
-                Console.Write("Mata in Medarbetarens Efternamn: ");
-                lastname = Console.ReadLine();
-                lastname = lastname.Trim();
-                lastname = lastname.ToLower();
-                if (lastname.Length < 2 || lastname.Length >= 50)
+                while (true)
                 {
-                    Console.WriteLine("2 - 50 tecken");
-                    System.Threading.Thread.Sleep(1500);
-                }
-                else
-                {
-                    lastname = char.ToUpper(lastname[0]) + lastname.Substring(1);
-                    break;
-                }
-            }
-
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine(firstname + " " + lastname);
-                Console.Write("\nSkriv in Kön [F/M]: ");
-                gender = Console.ReadLine();
-                gender = gender.Trim();
-                gender = gender.ToLower();
-                if (gender == "m" || gender == "male" || gender == "f" || gender == "female")
-                {
-                    if (gender == "m" || gender == "male")
+                    Console.Clear();
+                    Console.WriteLine("Lägg Till Medarbetare");
+                    Console.Write("Medarbetarens Förnamn: ");
+                    firstname = Console.ReadLine();
+                    firstname = firstname.Trim();
+                    firstname = firstname.ToLower();
+                    if (firstname.Length < 2 || firstname.Length >= 50)
                     {
-                        gender = "Male";
+                        Console.WriteLine("2 - 50 tecken");
+                        System.Threading.Thread.Sleep(1500);
                     }
                     else
                     {
-                        gender = "Female";
+                        firstname = char.ToUpper(firstname[0]) + firstname.Substring(1);
+                        break;
                     }
-                    break;
                 }
-                else
-                {
-                    Console.WriteLine("M för male, F för female");
-                    System.Threading.Thread.Sleep(1500);
-                }
+                return firstname;
             }
-            Console.Clear();
 
-            while (true)
+            string getLastname()
             {
-                var getTitles = from t in context.Titles select t;
-                bool breakLoop = false;
                 while (true)
                 {
-                    foreach (var titles in getTitles)
+                    Console.Clear();
+                    Console.WriteLine("Medarbetarens Förnamn: " + firstname);
+                    Console.Write("Mata in Medarbetarens Efternamn: ");
+                    lastname = Console.ReadLine();
+                    lastname = lastname.Trim();
+                    lastname = lastname.ToLower();
+                    if (lastname.Length < 2 || lastname.Length >= 50)
                     {
-                        Console.WriteLine("ID: " + titles.TitleId + ": " + titles.TitelName);
+                        Console.WriteLine("2 - 50 tecken");
+                        System.Threading.Thread.Sleep(1500);
                     }
-                    Console.Write("\nEnter TitleId: ");
-                    try
+                    else
                     {
-                        titleId = Convert.ToInt32(Console.ReadLine());
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        Console.Clear();
-                        // do nothing
-                    }
-                }
-                foreach (var checktitles in getTitles)
-                {
-                    if (checktitles.TitleId == titleId)
-                    {
-                        breakLoop = true;
+                        lastname = char.ToUpper(lastname[0]) + lastname.Substring(1);
                         break;
                     }
                 }
-                if (breakLoop == true)
-                {
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("Enter a valid TitleId..");
-                }
+                return lastname;
             }
-            Console.Clear();
 
-            while (true)
+            string getGender()
             {
-                var ShowSalaryStages = from m in context.Salaries select m;
-                bool breakLoop = false;
                 while (true)
                 {
-                    foreach (var s in ShowSalaryStages)
+                    Console.Clear();
+                    Console.WriteLine(firstname + " " + lastname);
+                    Console.Write("\nSkriv in Kön [F/M]: ");
+                    gender = Console.ReadLine();
+                    gender = gender.Trim();
+                    gender = gender.ToLower();
+                    if (gender == "m" || gender == "male" || gender == "f" || gender == "female")
                     {
-                        Console.WriteLine("ID: " + s.SalaryId + ": " + s.SalaryStages + " kr/mån");
-                    }
-                    Console.Write("\nEnter SalaryId: ");
-                    try
-                    {
-                        salaryId = Convert.ToInt32(Console.ReadLine());
+                        if (gender == "m" || gender == "male")
+                        {
+                            gender = "Male";
+                        }
+                        else
+                        {
+                            gender = "Female";
+                        }
                         break;
                     }
-                    catch (Exception)
+                    else
                     {
-                        Console.Clear();
-                        // do nothing
+                        Console.WriteLine("M för male, F för female");
+                        System.Threading.Thread.Sleep(1500);
                     }
                 }
-                foreach (var checktitles in ShowSalaryStages)
-                {
-                    if (checktitles.SalaryId == salaryId)
-                    {
-                        breakLoop = true;
-                        break;
-                    }
-                }
-                if (breakLoop == true)
-                {
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("Enter a valid SalaryId..");
-                }
+                return gender;
             }
+
+            int getTitle()
+            {
+                while (true)
+                {
+                    var title = from t in context.Titles select t;
+                    bool breakLoop = false;
+                    Console.Clear();
+                    while (true)
+                    {
+                        foreach (var titles in title)
+                        {
+                            Console.WriteLine("ID: " + titles.TitleId + ": " + titles.TitelName);
+                        }
+                        Console.Write("\nEnter TitleId: ");
+                        try
+                        {
+                            titleId = Convert.ToInt32(Console.ReadLine());
+                            break;
+                        }
+                        catch (Exception)
+                        {
+                            Console.Clear();
+                            // do nothing
+                        }
+                    }
+                    foreach (var checktitles in title)
+                    {
+                        if (checktitles.TitleId == titleId)
+                        {
+                            breakLoop = true;
+                            break;
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Enter a valid TitleId..");
+                    }
+                }
+                return titleId;
+            }
+
+            int getSalary()
+            {
+                while (true)
+                {
+                    var ShowSalaryStages = from m in context.Salaries select m;
+                    bool breakLoop = false;
+                    Console.Clear();
+                    while (true)
+                    {
+                        foreach (var s in ShowSalaryStages)
+                        {
+                            Console.WriteLine("ID: " + s.SalaryId + ": " + s.SalaryStages + " kr/mån");
+                        }
+                        Console.Write("\nEnter SalaryId: ");
+                        try
+                        {
+                            salaryId = Convert.ToInt32(Console.ReadLine());
+                            break;
+                        }
+                        catch (Exception)
+                        {
+                            Console.Clear();
+                            // do nothing
+                        }
+                    }
+                    foreach (var checktitles in ShowSalaryStages)
+                    {
+                        if (checktitles.SalaryId == salaryId)
+                        {
+                            breakLoop = true;
+                            break;
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Enter a valid SalaryId..");
+                    }
+                }
+                return salaryId;
+            }
+
             context.Employees.Add(new Employee(firstname, lastname, gender, titleId, salaryId));
             context.SaveChanges();
             Console.WriteLine("Medarbetare har lagts till");
