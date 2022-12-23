@@ -31,22 +31,41 @@ namespace SkolPortalen
                 while (true)
                 {
                     Console.Clear();
-                    Console.WriteLine("-----------------");
-                    Console.WriteLine("SkolPortalen");
-                    Console.WriteLine("-----------------");
+                    Console.WriteLine("    -----------------");
+                    Console.WriteLine("     SkolPortalen");
+                    Console.WriteLine("    -----------------");
                     Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
                     Console.WriteLine("#1: Avsluta Skolportalen");
-                    Console.WriteLine("#2: Hämta all personal");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("------------------------------------------------");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("#2: Hämta all personal [SQL]");
                     Console.WriteLine("#3: Hämta alla elever");
                     Console.WriteLine("#4: Hämta alla elever i en viss klass");
-                    Console.WriteLine("#5: Hämta alla betyg från den senaste månaden");
-                    Console.WriteLine("#6: Lista med alla kurser och det snittbetyg som eleverna fått på den kursen samt det högsta och lägsta betyget som någon fått i kursen");
+                    Console.WriteLine("#5: Hämta alla betyg från den senaste månaden [SQL]");
+                    Console.WriteLine("#6: Lista med alla kurser, snittbetyg för kursen samt högsta/lägsta betyg för kursen [SQL]");
                     Console.WriteLine("#7: Lägga till nya elever");
                     Console.WriteLine("#8: Lägg till ny personal)");
-                    Console.WriteLine("#9: Hur många anställda jobbar på de olika avdelningarna "); // EF i VS"
+                    Console.WriteLine("#9: Hur många anställda jobbar på de olika avdelningarna ");
                     Console.WriteLine("#10: Visa All information om alla elever ");
                     Console.WriteLine("#11: Visa en lista på alla aktiva kurser ");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("------------------------------------------------");
+                    Console.WriteLine("                      SQL                       ");
+                    Console.WriteLine("------------------------------------------------");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine("#12: Översikt över all personal, samt anställningstid");
+                    Console.WriteLine("#13: Hur mycket betalar respektive avdelning ut i lön varje månad");
+                    Console.WriteLine("#14: Medellönen för de olika avdelningarna");
+                    Console.WriteLine("#15: Sätt betyg för en elev");
+                    Console.WriteLine("#16: Skriv in Student-ID för detaljer angående studenten");
+                    /*EXEC SP_StudentInfo @studInfo = 12*/
+
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("------------------------------------------------");
                     Console.Write("\n Välj alternativ: ");
+                    Console.ResetColor();
                     try
                     {
                         menuSelection = Convert.ToInt32(Console.ReadLine());
@@ -94,48 +113,82 @@ namespace SkolPortalen
                     case 11:
                         displayCourseStatus();
                         break;
+                    case 12:
+                        EmployeeInfo();
+                        break;
+                    case 13:
+                        CalcSalaryEachMonth();
+                        break;
+                    case 14:
+                        averageSalaryPerTitel();
+                        break;
+                    case 15:
+                        createDegree();
+                        break;
+                    case 16:
+                        //returnStudentInfoById();
+                        break;
                 }
             }
         }
         private void getAllEmployees()
         {
+            string sqlQuery = "";
             string userInput = "";
+            var title = from t in context.Titles.OrderBy(t => t.TitleId) select t;
             while (true)
             {
+                bool breakLoop = false;
                 Console.Clear();
-                Console.WriteLine("#1: Alla anställda");
-                Console.WriteLine("#2: Lärare");
-                Console.WriteLine("#3: Administratörer");
-                Console.WriteLine("#0: Tillbaka till skolportalen");
+                Console.WriteLine("#0: Alla anställda");
+                foreach (var t in title)               // display all titleNames
+                {
+                    Console.WriteLine("#" + t.TitleId + ": " + t.TitelName);
+                }
                 Console.Write("Välj avdelning vill du ha information från: ");
                 userInput = Console.ReadLine();
                 userInput = userInput.Trim();
 
-                if (userInput == "1")
+                foreach (var t in title)
                 {
-                    ReadSqlTable("Select EmpFirstName, EmpLastname, TitelName , EmploymentDate From Employee, Title where FK_TitleID = Title_ID order by TitelName");
-                    Console.ReadKey();
+                    if (userInput == "0")
+                    {
+                        breakLoop = true;
+                        sqlQuery = "Select Employee_ID, EmpFirstName, EmpLastname, TitelName , EmploymentDate From Employee, Title where FK_TitleID = Title_ID order by TitelName";
+                        break;
+                    }
+                    else if (userInput == t.TitleId.ToString())
+                    {
+                        Console.Clear();
+                        userInput = "'" + t.TitelName + "'";
+                        breakLoop = true;
+                        sqlQuery = $"Select Employee_ID, EmpFirstName, EmpLastname, TitelName, EmploymentDate From Employee AS e, Title AS t where e.FK_TitleID = t.Title_ID and t.TitelName = {userInput}";
+                        break;
+                    }
                 }
-                else if (userInput == "2")
-                {
-                    ReadSqlTable("Select EmpFirstName, EmpLastname, TitelName From Employee AS e, Title AS t where e.FK_TitleID = t.Title_ID and t.TitelName = 'Teacher'");
-                    Console.ReadKey();
-                }
-                else if (userInput == "3")
-                {
-                    ReadSqlTable("Select EmpFirstName, EmpLastname, TitelName From Employee Join Title On Title_ID = FK_TitleID where TitelName = 'administrator'");
-                    Console.ReadKey();
-                }
-                else if (userInput == "0")
+                if (breakLoop == true)
                 {
                     break;
                 }
-                else
-                {
-                    Console.WriteLine("Felaktig input..");
-                    System.Threading.Thread.Sleep(1000);
-                }
             }
+
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("ID: " + table["Employee_ID"]);
+                Console.WriteLine(table["EmpFirstName"] + " " + table["EmpLastName"]);
+                Console.WriteLine("Titel: " + table["TitelName"]);
+                Console.WriteLine("AnställningsDatum: " + table["EmploymentDate"]);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
+            Console.ReadKey();
         }
 
         private void getStudents()
@@ -336,38 +389,56 @@ namespace SkolPortalen
         private void getGrades()
         {
             Console.Clear();
-            Console.WriteLine("------------------");
-            Console.WriteLine("Elevens namn");
-            Console.WriteLine("Kurs");
-            Console.WriteLine("Betyg");
-            Console.WriteLine("Signerad av");
-            Console.WriteLine("Signerings datum");
-            Console.WriteLine("------------------");
-            ReadSqlTable("Select StudFirstName + ' ' + StudLastName AS [Student], CourseName, ExamenGrade, EmpFirstName + " +
-                         "' ' + EmpLastname AS [Signed by], ExamenDate From student, Course, Employee, Examen where Student_ID" +
-                         " = FK_StudentID and Course_ID = FK_CourseID and Employee_ID = examen.FK_EmployeeID and ExamenDate >= " +
-                         "DATEADD(DAY, -30, getdate()) order by Student_ID");
-            Console.WriteLine("\nKey for menu..");
+            string sqlQuery = "Select Student_ID, StudFirstName, StudLastName, CourseName, ExamenGrade, Employee_ID, EmpFirstName, EmpLastname, ExamenDate " +
+                                 "From student, Course, Employee, Examen " +
+                                   "where Student_ID = FK_StudentID and Course_ID = FK_CourseID " +
+                                     "and Employee_ID = examen.FK_EmployeeID " +
+                                       "and ExamenDate >= DATEADD(DAY, -30, getdate()) " +
+                                         "order by Student_ID";
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.WriteLine("Elev-id: " + table["Student_ID"]);
+                Console.WriteLine("Elev: " + table["StudFirstName"] + " " + table["StudLastName"]);
+                Console.WriteLine("Kurs: " + table["CourseName"]);
+                Console.WriteLine("Betyg: " + table["ExamenGrade"]);
+                Console.WriteLine("Signerad av: " + table["EmpFirstName"] + " " + table["EmpLastname"] + ". Anställningsnummer: " + table["Employee_ID"]);
+                Console.WriteLine("Avslutat Kurs: " + table["ExamenDate"]);
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
             Console.ReadKey();
         }
 
         private void getAverageGradesAndHighestLowestGrades()
         {
             Console.Clear();
-            Console.WriteLine("------------------");
-            Console.WriteLine("Kurs");
-            Console.WriteLine("Antal elever på denna kurs");
-            Console.WriteLine("Snittbetyget för kursen");
-            Console.WriteLine("Lägsta betyget för kursen");
-            Console.WriteLine("Högsta betyget för kursen");
-            Console.WriteLine("------------------");
-            ReadSqlTable("Select CourseName,\r\n\tCount(FK_StudentID) AS [Antal Elever]," +
+            string sqlQuery = "Select CourseName, Count(FK_StudentID) AS [Antal Elever]," +
                          "AVG(ExamenGrade) AS [Snittbetyg], " +
                          "Max(ExamenGrade) AS [Lägsta Betyg]," +
                          "Min(ExamenGrade) AS [Högsta Betyg]" +
                          "  From Course " +
                          "    Join Examen On FK_CourseID = Course_ID " +
-                         "      group by Course_ID, CourseName");
+                         "      group by Course_ID, CourseName";
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.WriteLine("Kurs: " + table["CourseName"]);
+                Console.WriteLine("Antal elever: " + table["Antal Elever"]);
+                Console.WriteLine("Snittbetyg: " + table["Snittbetyg"]); ;
+                Console.WriteLine("Lägsta betyg: " + table["Lägsta Betyg"]);
+                Console.WriteLine("Högsta betyg: " + table["Högsta Betyg"]);
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
             Console.ReadKey();
         }
 
@@ -919,31 +990,7 @@ namespace SkolPortalen
             Console.WriteLine("Medarbetare har lagts till");
         }
 
-        private static void ReadSqlTable(string sqlQuery)
-        {
-            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
-            connection.Open();
-            SqlCommand command = new SqlCommand(sqlQuery, connection);
-            using (SqlDataReader reader = command.ExecuteReader())
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("---------------");
-                Console.ResetColor();
-                while (reader.Read())
-                {
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        Console.WriteLine(reader[i]);
-                    }
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("---------------");
-                    Console.ResetColor();
-                }
-                connection.Close();
-            }
-        }
-
-        private void CountAllEMployee() // #9: Hur många anställda jobbar på de olika avdelningarna "); // EF i VS"
+        private void CountAllEMployee()
         {
             string getData = "";
             string getTitle = "";
@@ -1076,5 +1123,266 @@ namespace SkolPortalen
             Console.ResetColor();
             Console.ReadKey();
         }
+
+        private void EmployeeInfo()
+        {
+            Console.Clear();
+            string sqlQuery = "select Employee_ID, EmpLastname,  EmpFirstname, TitelName, DATEDIFF(YEAR, EmploymentDate, GetDate()) AS [Years in duty] " +
+                                "From Employee, Title " +
+                                  "where FK_TitleID = Title_ID " +
+                                    "order by EmpLastname";
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.WriteLine("Anställningsnummer: " + table["Employee_ID"]);
+                Console.WriteLine(table["EmpLastname"] + " " + table["EmpFirstname"]);
+                Console.WriteLine("Titel: " + table["TitelName"]);
+                Console.WriteLine("Arbetat: " + table["Years in duty"] + " år");
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
+            Console.ReadKey();
+        }
+
+        private void CalcSalaryEachMonth()
+        {
+            Console.Clear();
+            string sqlQuery = "Select SUM(CAST(SalaryStages AS INT)) AS [Utbetalda Löner], TitelName " +
+                                "From Employee " +
+                                  "join Salary On Employee.FK_SalaryID = Salary_ID " +
+                                    "join Title On Employee.FK_TitleID = Title_ID " +
+                                      "group by Title.TitelName";
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.WriteLine("Arbetsområde " + table["TitelName"]);
+                Console.WriteLine("Utbetalda Löner: " + table["Utbetalda Löner"] + " KR/Månad");
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
+            Console.ReadKey();
+        }
+
+        private void averageSalaryPerTitel()
+        {
+            Console.Clear();
+            string sqlQuery = "Select TitelName, AVG(CAST(SalaryStages AS INT)) AS [Medellön] From Employee " +
+                "join Salary On Employee.FK_SalaryID = Salary_ID " +
+                  "join Title On Employee.FK_TitleID = Title_ID " +
+                   "group by Title.TitelName " +
+                    "order by Medellön DESC";
+            SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+            SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+            DataTable newtable = new DataTable();
+            sqlData.Fill(newtable);
+
+            foreach (DataRow table in newtable.Rows)
+            {
+                Console.WriteLine("Titel: " + table["TitelName"]);
+                Console.WriteLine("Medellön: " + table["Medellön"]);
+                Console.WriteLine("----------------------------------");
+            }
+            Console.ResetColor();
+            Console.ReadKey();
+        }
+
+        private void createDegree()
+        {
+            string userInput = "";
+            int getStudentId = 0;
+            string studentName = "";
+            int getCourseId = 0;
+            string courseName = "";
+            int getEmployeeId = 0;
+            string employeeName = "";
+            int setGrade = 0;
+
+            var myStudents = from s in context.Students select s;
+            var myCourses = from c in context.Courses select c;
+            var myEmployees = from e in context.Employees select e;
+            var myexamen = from ex in context.Examen select ex;
+
+            getStudentId = pickStudentId();
+            getCourseId = pickCourseId();
+
+            if (userInput != "0") // back to menu
+            {
+                setGrade = pickGrade();
+                addGrade();
+            }
+
+            // ---- Local funktions ----
+            int pickStudentId()
+            {
+                while (true)
+                {
+                    Console.Clear();
+                    bool breakLoop = false;
+                    Console.Clear();
+                    foreach (var student in myStudents) // display all students
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine("ID #" + student.StudentId + ". Personnummer: " + student.StudPersonNumber + ": " + student.StudFirstName + " " + student.StudLastName);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("-------------------------------------");
+                    }
+                    Console.ResetColor();
+
+                    Console.Write("\nVälj Student-Id: ");
+                    userInput = Console.ReadLine();
+                    userInput = userInput.Trim();
+
+                    foreach (var student in myStudents) // get studentname in local variable
+                    {
+                        if (userInput == student.StudentId.ToString())
+                        {
+                            breakLoop = true;
+                            getStudentId = Convert.ToInt32(userInput);
+                            studentName = student.StudFirstName + " " + student.StudLastName;
+                            break;
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
+                    }
+                }
+                return getStudentId;
+            }
+
+            int pickCourseId()
+            {
+                while (true)
+                {
+                    Console.Clear();
+                    bool breakLoop = false;
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("#0: Tillbaka till Skolportalen");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine("-------------------------------------");
+                    foreach (var course in myCourses) // display courses
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Course ID: " + course.CourseId);
+                        Console.WriteLine("Course: " + course.CourseName);                        
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine("-------------------------------------");
+                    }
+                    Console.ResetColor();
+
+                    Console.Write("\nVälj Kurs-Id: ");
+                    userInput = Console.ReadLine();
+                    userInput = userInput.Trim();
+                    if(userInput == "0")
+                    {
+                        break;
+                    }
+
+                    foreach (var course in myCourses)
+                    {
+                        if (userInput == course.CourseId.ToString())
+                        {
+                            getCourseId = Convert.ToInt32(userInput);
+                            getEmployeeId = course.FkEmployeeId; // autogenerates teachers id for signing the examen
+                            breakLoop = true;
+                            break;
+                        }
+                    }
+
+                    foreach (var employees in myEmployees) // get teachername
+                    {
+                        if (getEmployeeId == employees.EmployeeId)
+                        {
+                            employeeName = employees.EmpFirstName + " " + employees.EmpLastname;
+                        }
+                    }
+                    foreach (var examen in myexamen) // if student already contains a grade for specific course
+                    {
+                        if (getStudentId == examen.FkStudentId && getCourseId == examen.FkCourseId)
+                        {
+                            Console.WriteLine("Det finns redan ett registrerat betyg för denna elev tillhörande kurs-id: " + getCourseId);
+                            Console.WriteLine("Välj en annan kurs..");
+                            breakLoop = false;
+                            System.Threading.Thread.Sleep(2500);
+                        }
+                    }
+                    if (breakLoop == true)
+                    {
+                        break;
+                    }
+                }
+                return getCourseId;
+            }
+
+            int pickGrade()
+            {
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("Student: " + studentName + ". ID: " + getStudentId);
+                    Console.WriteLine("Kurs: " + courseName + ". ID: " + getCourseId);
+                    Console.WriteLine("-------------------------------------------");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine("Betygsformler:");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("1 = A");
+                    Console.WriteLine("2 = B");
+                    Console.WriteLine("3 = C");
+                    Console.WriteLine("4 = D");
+                    Console.WriteLine("5 = E");
+                    Console.WriteLine("6 = F");
+                    Console.ResetColor();
+                    Console.Write("Sätt betyg: ");
+                    userInput = Console.ReadLine();
+                    userInput = userInput.Trim();
+                    if (userInput == "1" || userInput == "2" || userInput == "3" || userInput == "4" || userInput == "5" || userInput == "6")
+                    {
+                        setGrade = Convert.ToInt32(userInput);
+                        break;
+                    }
+                }
+                return setGrade;
+            }        
+
+            void addGrade()
+            {
+                Console.Clear();
+                string sqlQuery = "Begin Transaction " +
+                    "Begin Try " +
+                       "Insert Into Examen(FK_StudentID, FK_CourseID, FK_EmployeeID, ExamenGrade, ExamenDate) " +
+                       $"values({getStudentId}, {getCourseId}, {getEmployeeId}, {setGrade}, GETDATE()) " +
+                       "Commit Transaction " +
+                    "End Try " +
+                    "Begin Catch " +
+                      "Rollback Transaction " +
+                    "End Catch";
+
+                SqlConnection connection = new SqlConnection(@"Data Source = DESKTOP-JN0UGIT\MSSQLSERVER01; Initial Catalog = SchoolV2; Integrated Security = true");
+                SqlDataAdapter sqlData = new SqlDataAdapter(sqlQuery, connection);
+                DataTable newtable = new DataTable();
+                sqlData.Fill(newtable);
+
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.WriteLine("----------------------------------");
+                Console.WriteLine("StudentID: " + getStudentId);
+                Console.WriteLine("Student: " + studentName);
+                Console.WriteLine("Kurs-id: " + getCourseId);
+                Console.WriteLine("Betyg: " + setGrade);
+                Console.WriteLine("Signered: " + employeeName + ". Anställningsnummer: " + getEmployeeId);
+                Console.WriteLine("----------------------------------");
+                Console.ResetColor();
+                Console.WriteLine("\n Betyget är nu satt");
+                Console.WriteLine("\nKey for menu..");
+                Console.ReadKey();
+            }
+        }    
     }
 }
